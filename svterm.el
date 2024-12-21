@@ -1,71 +1,71 @@
 
-(defvar svterm-buffer-count 20
-  "Number of vterm buffers that are managed by smulti-vterm.")
+(defvar svterm-buffers (make-ring 10)
+  "Ring of `vterm' buffers")
 
-(defvar svterm-buffer-index 0
-  "Index of current vterm buffer managed by smulti-vterm")
+(defvar svterm-disply-buffer-actions '((display-buffer-reuse-window display-buffer-pop-up-window display-buffer-use-least-recent-window)
+                                       ((reusable-frames . 0)))
+  "Choose how the vterm buffer is to be displayed. It has the structure of the
+ACTION parameter of `display-buffer'.")
 
-(defvar svterm-buffers (make-vector svterm-buffer-count nil)
-  "vector of lengthvterm buffers")
+(defun svterm-pop-to-buffer (buf)
+  (pop-to-buffer buf svterm-disply-buffer-actions))
 
-(defun svterm-advance-index! ()
-  "Return next index of `svterm-buffer-index'."
-  (setq svterm-buffer-index
-        (mod (+ svterm-buffer-index 1) svterm-buffer-count)))
+(defun svterm-vterm-buffer-p (buf)
+  (let ((buf-proc (get-buffer-process buf)))
+    (if (and buf-proc
+             (string-prefix-p "vterm" (process-name buf-proc))))))
 
-(defun svterm-current ()
-  "Return current buffer of `svterm-buffers' pointed to by `svterm-buffer-index'."
-  (aref svterm-buffers svterm-buffer-index))
-
-(defun svterm-next-slot! ()
-  "Return the buffer of `svterm-buffers' in the slot next in line or nil, if it
-is free."
-  (svterm-advance-index!)
-  (if (buffer-live-p (svterm-current))
-      (svterm-current)
-    (aset svterm-buffers svterm-buffer-index nil)))
-
-(defun svterm-find-next! ()
-  "Iterate through `svterm-buffers' and return the next live `vterm' buffer."
-  (let ((start-i vterm-buffer-index))
-    (while (not (= vterm-buffer-index start-i))
-      (when (svterm-next-slot!)
-        (return (svterm-current)))
-      )))
-
-(defun svterm-find-free! ()
-  "Iterate through `svterm-buffers' and return the index of the next free slot."
-  (let ((start-i vterm-buffer-index))
-    (while (not (= vterm-buffer-index start-i))
-      (unless (svterm-next-slot!)
-        (return svterm-buffer-index))
-      )))
-
-(defun svterm-make-buffer ()
+(defun svterm-generate-vterm-buffer ()
   "Create and return a new `vterm' buffer."
-  (let ((buf (generate-new-buffer (format "*vterm*<%d>" svterm-buffer-index))))
+  (let ((buf (generate-new-buffer (format "*vterm*<%d>" (ring-length svterm-buffers)))))
     (with-current-buffer buf
       (vterm-mode))
     buf))
 
+(defun svterm-find-buffer-index (buf)
+  (seq-position (ring-elements svterm-buffers) buf #'equal))
+
+(defun svterm-new-buffer ()
+  "Generate new `vterm' buffer, put it into `svterm-buffers' and return it."
+  (when (= (ring-length svterm-buffers) (ring-size svterm-buffers))
+    ;; ring full: increase size
+    (ring-resize svterm-buffers
+                 (+ (ring-size svterm-buffers) 5)))
+  (ring-insert svterm-buffers (svterm-generate-vterm-buffer)))
+
+(defun svterm-remove-buffer (buf)
+  (let ((index (svterm-find-buffer-index buf)))
+    (when index
+      (ring-remove svterm-buffers index))))
+
+(defun svterm-buffers-remove-killed-buffer ()
+  "Remove the killed `vterm' buffer from `svterm-buffers'."
+  (when (svterm-vterm-buffer-p (current-buffer))
+    (svterm-remove-buffer (current-buffer))))
+
+(add-to-list 'kill-buffer-hook #'svterm-buffers-remove-killed-buffer)
+
 (defun svterm-new ()
   (interactive)
-  (let ((start-i vterm-buffer-index))
-    (while t
-      (svterm-advance-index!)
+  (svterm-pop-to-buffer (svterm-new-buffer)))
 
-      )
-    )
-  (if (svterm-find-free)
-      ())
-  )
+(defun svterm-next (&optional prefix-arg)
+  (interactive "P")
+  (cond (;; create new one if the ring is empty
+         (ring-empty-p svterm-buffers)
+         (svterm-new))
 
+        (;; if a vterm buffer is current
+         (svterm-vterm-buffer-p (current-buffer))
+         (svterm-pop-to-buffer
+          (ring-ref svterm-buffers
+                    (if prefix-arg -1 1))))
 
-(defun svterm-next ()
-  (interactive)
-  (let ((buf (svterm-find-next)))
-    (if buf
-        (pop-to-buffer buf)
-      (set buf (svterm-make-buffer))
-      (aset svterm-buffers svterm-buffer-index buf)
-      (pop-to-buffer buf))))
+        (t ;; else
+         (svterm-pop-to-buffer (ring-ref svterm-buffers 0)))))
+
+(defun svterm-prev (&optional prefix-arg)
+  (svterm-next
+   (if prefix-arg
+       nil
+     prefix-arg)))
