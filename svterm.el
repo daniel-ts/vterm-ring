@@ -2,18 +2,17 @@
 (defvar svterm-buffers (make-ring 10)
   "Ring of `vterm' buffers")
 
-(defvar svterm-disply-buffer-actions '((display-buffer-reuse-window display-buffer-pop-up-window display-buffer-use-least-recent-window)
-                                       ((reusable-frames . 0)))
+(defvar svterm-disply-buffer-in-focus '((display-buffer-same-window)
+                                        ((reusable-frames . 0))))
+(defvar svterm-disply-buffer-out-of-focus '((display-buffer-reuse-window display-buffer-pop-up-window display-buffer-use-least-recent-window)
+                                            ((reusable-frames . 0)))
   "Choose how the vterm buffer is to be displayed. It has the structure of the
 ACTION parameter of `display-buffer'.")
 
-(defun svterm-pop-to-buffer (buf)
-  (pop-to-buffer buf svterm-disply-buffer-actions))
-
 (defun svterm-vterm-buffer-p (buf)
   (let ((buf-proc (get-buffer-process buf)))
-    (if (and buf-proc
-             (string-prefix-p "vterm" (process-name buf-proc))))))
+    (and buf-proc
+         (string-prefix-p "vterm" (process-name buf-proc)))))
 
 (defun svterm-generate-vterm-buffer ()
   "Create and return a new `vterm' buffer."
@@ -38,16 +37,17 @@ ACTION parameter of `display-buffer'.")
     (when index
       (ring-remove svterm-buffers index))))
 
-(defun svterm-buffers-remove-killed-buffer ()
-  "Remove the killed `vterm' buffer from `svterm-buffers'."
-  (when (svterm-vterm-buffer-p (current-buffer))
-    (svterm-remove-buffer (current-buffer))))
+(defun svterm-buffers-remove-killed-buffer (buf event)
+  "Remove the killed `vterm' buffer from `svterm-buffers', like in the
+`vterm-exit-functions' abnormal hook."
+  (message "svterm-buffers-remove-killed-buffer: current-buffer: %s event: %s" (print buf) event)
+  (svterm-remove-buffer buf))
 
-(add-to-list 'kill-buffer-hook #'svterm-buffers-remove-killed-buffer)
+(add-to-list 'vterm-exit-functions #'svterm-buffers-remove-killed-buffer)
 
 (defun svterm-new ()
   (interactive)
-  (svterm-pop-to-buffer (svterm-new-buffer)))
+  (pop-to-buffer (svterm-new-buffer) 'svterm-disply-buffer-out-of-focus))
 
 (defun svterm-next (&optional prefix-arg)
   (interactive "P")
@@ -57,12 +57,18 @@ ACTION parameter of `display-buffer'.")
 
         (;; if a vterm buffer is current
          (svterm-vterm-buffer-p (current-buffer))
-         (svterm-pop-to-buffer
+         (pop-to-buffer
           (ring-ref svterm-buffers
-                    (if prefix-arg -1 1))))
+                    (+ (svterm-find-buffer-index (current-buffer))
+                       (if prefix-arg -1 1)))
+          'svterm-disply-buffer-in-focus))
+
+        ;; TODO: why not make the visited buffer the oldest one?
 
         (t ;; else
-         (svterm-pop-to-buffer (ring-ref svterm-buffers 0)))))
+         (pop-to-buffer
+          (ring-ref svterm-buffers 0)
+          'svterm-disply-buffer-out-of-focus))))
 
 (defun svterm-prev (&optional prefix-arg)
   (svterm-next
