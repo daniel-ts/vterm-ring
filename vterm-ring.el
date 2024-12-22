@@ -1,3 +1,32 @@
+;;; vterm-ring.el --- Simply manage multiple vterm buffers -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2024 by Daniel Tschertkow
+;;
+;; Author: Daniel Tschertkow <daniel.tschertkow@posteo.de>
+;; URL: https://github.com/akermu/emacs-libvterm
+;; Keywords: terminals vterm
+;; Package-Requires: ((emacs "25.1"))
+
+;; This file is not part of GNU Emacs.
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
+
+
+;;; Commentary:
+;; Simply manage multiple vterm buffers via a ring.
+
+;;; Code:
 
 (require 'seq)
 (require 'vterm)
@@ -61,11 +90,13 @@ it."
 
 (add-to-list 'vterm-exit-functions #'vterm-ring--remove-killed)
 
+;;;###autoload
 (defun vterm-ring-new ()
   "Create and display a new `vterm' buffer that is managed by `vterm-ring'."
   (interactive)
   (pop-to-buffer (vterm-ring--new-buffer) 'vterm-ring-display-buffer-out-of-focus))
 
+;;;###autoload
 (defun vterm-ring-next (&optional prefix-arg)
   "Similar to `vterm-ring-prev'.
 
@@ -97,6 +128,7 @@ successor."
           (ring-ref vterm-ring-vterms 0)
           'vterm-ring-display-buffer-out-of-focus))))
 
+;;;###autoload
 (defun vterm-ring-prev (&optional prefix-arg)
   "Inversion of `vterm-ring-next'."
   (interactive "P")
