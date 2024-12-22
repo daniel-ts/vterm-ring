@@ -98,18 +98,8 @@ successor."
           'vterm-ring-display-buffer-out-of-focus))))
 
 (defun vterm-ring-prev (&optional prefix-arg)
-  "Similar to `vterm-ring-prev'.
-
-Display an existing `vterm' buffer. If no vterm buffer exists yet, create one.
-If a vterm buffer is current, display its predecessor in the ring.
-Otherwise, display the most recent vterm buffer.
-
-This behavior can be controlled via `vterm-ring-display-buffer-in-focus' and
-`vterm-ring-display-buffer-out-of-focus', or, of course, via
-`display-buffer-overriding-action' or an entry in `display-buffer-alist'.
-
-If called with a PREFIX-ARG, the successor is displayed instead of the
-predecessor."
+  "Inversion of `vterm-ring-next'."
+  (interactive "P")
   (vterm-ring-next
    (if prefix-arg
        nil
