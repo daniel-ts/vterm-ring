@@ -6,5 +6,7 @@ Manage multiple vterm buffers through these simple commands:
 - =vterm-ring-next=: switch to either an existing vterm buffer, or bring one into focus
 - =vterm-ring-prev=: similar to =vterm-ring-next=
 
+This is supposed to be a much simpler version of [[https://github.com/suonlight/multi-vterm/tree/36746d85870dac5aaee6b9af4aa1c3c0ef21a905][multi-vterm]].
+
 * See also
 - [[https://github.com/akermu/emacs-libvterm][Emacs libvterm]]
