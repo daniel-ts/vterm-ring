@@ -27,7 +27,6 @@
 ;; Simply manage multiple vterm buffers via a ring.
 
 ;;; Code:
-
 (require 'seq)
 (require 'vterm)
 
@@ -138,3 +137,4 @@ successor."
      prefix-arg)))
 
 (provide 'vterm-ring)
+;;; vterm-ring.el ends here
