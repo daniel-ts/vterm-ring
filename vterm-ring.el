@@ -65,6 +65,10 @@ that are used to display a `vterm' buffer when none is current."
   (let ((buf (generate-new-buffer
               (format "*vterm*<%d>" (vterm-ring--next-buf-id)))))
     (with-current-buffer buf
+      (add-hook 'kill-buffer-hook
+                #'(lambda ()
+                    (run-hook-with-args 'vterm-exit-functions buf))
+                nil t)
       (vterm-mode))
     buf))
 
@@ -88,12 +92,13 @@ it."
     (when index
       (ring-remove vterm-ring--vterms index))))
 
-(defun vterm-ring--remove-killed (buf event)
+(defun vterm-ring--remove-killed (buf &optional event)
   "Remove the killed `vterm' buffer from `vterm-ring--vterms', like in the
 `vterm-exit-functions' abnormal hook."
   (vterm-ring--remove-buffer buf))
 
-(add-to-list 'vterm-exit-functions #'vterm-ring--remove-killed)
+(eval-after-load 'vterm
+  '(add-to-list 'vterm-exit-functions #'vterm-ring--remove-killed))
 
 ;;;###autoload
 (defun vterm-ring-new ()
