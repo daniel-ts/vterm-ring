@@ -92,7 +92,7 @@ Put it into `vterm-ring--vterms' and evaluate to it."
     (when index
       (ring-remove vterm-ring--vterms index))))
 
-(defun vterm-ring--remove-killed (buf _)
+(defun vterm-ring--remove-killed (buf &optional _)
   "Remove the killed `vterm' buffer BUF from `vterm-ring--vterms'.
 See the `vterm-exit-functions' abnormal hook."
   (vterm-ring--remove-buffer buf))
