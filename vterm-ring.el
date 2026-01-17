@@ -36,8 +36,8 @@
 (defcustom vterm-ring-display-buffer-in-focus
   '((display-buffer-same-window)
     ((reusable-frames . 0)))
-  "`display-buffer' actions like in the `display-buffer-base-action' variable
-that are used to display a `vterm' buffer when one is already in focus."
+  "Set the `display-buffer' actions like in `display-buffer-base-action'.
+These are used to display a `vterm' buffer when one is already in focus."
   :group 'vterm-ring)
 
 (defcustom vterm-ring-display-buffer-out-of-focus
@@ -45,8 +45,8 @@ that are used to display a `vterm' buffer when one is already in focus."
      display-buffer-pop-up-window
      display-buffer-use-least-recent-window)
     ((reusable-frames . 0)))
-  "`display-buffer' actions like in the `display-buffer-base-action' variable
-that are used to display a `vterm' buffer when none is current."
+  "Set the `display-buffer' actions like in `display-buffer-base-action'.
+These are used to display a `vterm' buffer when none is current."
   :group 'vterm-ring)
 
 (defun vterm-ring--vterm-buffer-p (buf)
@@ -73,13 +73,13 @@ that are used to display a `vterm' buffer when none is current."
     buf))
 
 (defun vterm-ring--find-buffer-index (buf)
-  "Find a `vterm' buffer that is `equal' to BUF in `vterm-ring--vterms' and
-evalutate to its index."
+  "Find a `vterm' buffer that is `equal' to BUF in `vterm-ring--vterms'.
+Evalutate to its index."
   (seq-position (ring-elements vterm-ring--vterms) buf #'equal))
 
 (defun vterm-ring--new-buffer ()
-  "Generate new `vterm' buffer, put it into `vterm-ring--vterms' and evaluate to
-it."
+  "Generate a new `vterm' buffer.
+Put it into `vterm-ring--vterms' and evaluate to it."
   (when (= (ring-length vterm-ring--vterms) (ring-size vterm-ring--vterms))
     ;; ring full: increase size
     (ring-resize vterm-ring--vterms
@@ -92,9 +92,9 @@ it."
     (when index
       (ring-remove vterm-ring--vterms index))))
 
-(defun vterm-ring--remove-killed (buf &optional event)
-  "Remove the killed `vterm' buffer from `vterm-ring--vterms', like in the
-`vterm-exit-functions' abnormal hook."
+(defun vterm-ring--remove-killed (buf _)
+  "Remove the killed `vterm' buffer BUF from `vterm-ring--vterms'.
+See the `vterm-exit-functions' abnormal hook."
   (vterm-ring--remove-buffer buf))
 
 (eval-after-load 'vterm
@@ -107,10 +107,10 @@ it."
   (pop-to-buffer (vterm-ring--new-buffer) 'vterm-ring-display-buffer-out-of-focus))
 
 ;;;###autoload
-(defun vterm-ring-next (&optional prefix-arg)
+(defun vterm-ring-next (&optional prefix)
   "Similar to `vterm-ring-prev'.
 
-Display an existing `vterm' buffer. If no vterm buffer exists yet, create one.
+Display an existing `vterm' buffer.  If no vterm buffer exists yet, create one.
 If a vterm buffer is current, display its successor in the ring.
 Otherwise, display the most recent vterm buffer.
 
@@ -118,7 +118,7 @@ This behavior can be controlled via `vterm-ring-display-buffer-in-focus' and
 `vterm-ring-display-buffer-out-of-focus', or, of course, via
 `display-buffer-overriding-action' or an entry in `display-buffer-alist'.
 
-If called with a PREFIX-ARG, the predecessor is displayed instead of the
+If called with a PREFIX, the predecessor is displayed instead of the
 successor."
   (interactive "P")
   (cond (;; create new one if the ring is empty
@@ -130,7 +130,7 @@ successor."
          (pop-to-buffer
           (ring-ref vterm-ring--vterms
                     (+ (vterm-ring--find-buffer-index (current-buffer))
-                       (if prefix-arg -1 1)))
+                       (if prefix -1 1)))
           'vterm-ring-display-buffer-in-focus))
 
         (t ;; else
@@ -139,11 +139,12 @@ successor."
           'vterm-ring-display-buffer-out-of-focus))))
 
 ;;;###autoload
-(defun vterm-ring-prev (&optional prefix-arg)
-  "Inversion of `vterm-ring-next'."
+(defun vterm-ring-prev (&optional prefix)
+  "Inversion of `vterm-ring-next'.
+Use PREFIX to chenge direction."
   (interactive "P")
   (vterm-ring-next
-   (if prefix-arg
+   (if prefix
        nil
      prefix-arg)))
 
